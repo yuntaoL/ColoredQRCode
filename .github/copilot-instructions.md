@@ -27,3 +27,5 @@ The main package is coloredqrcode. Place all core logic in this package.
 Tests are located in the tests/ directory and should use pytest.
 
 Dependencies should be managed via requirements.txt and/or pyproject.toml.
+
+When running unit tests, always show the test results output every time.

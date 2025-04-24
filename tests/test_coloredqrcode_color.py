@@ -8,6 +8,7 @@ from coloredqrcode import (
     decode_colored_qr_code,
 )
 import shutil
+import numpy as np
 
 
 class TestGenerateColoredQRCode(unittest.TestCase):
@@ -114,6 +115,22 @@ class TestGenerateColoredQRCode(unittest.TestCase):
                 img_temp.save(jpeg_path, format="JPEG", quality=quality)
             decoded = decode_colored_qr_code(jpeg_path)
             self.assertEqual(decoded, data, f"Failed after 5x JPEG re-encodings at quality {quality}")
+
+    def test_decode_colored_qr_code_from_image_object(self):
+        """Test decoding from a PIL.Image.Image object, not just file path."""
+        data = "Test image object input for decode_colored_qr_code"
+        img = generate_colored_qr_code(data)
+        # Decode directly from image object
+        decoded = decode_colored_qr_code(img)
+        self.assertEqual(decoded, data)
+
+    def test_decode_colored_qr_code_from_numpy_array(self):
+        """Test decoding from a numpy array input."""
+        data = "Test numpy array input for decode_colored_qr_code"
+        img = generate_colored_qr_code(data)
+        arr = np.array(img)
+        decoded = decode_colored_qr_code(arr)
+        self.assertEqual(decoded, data)
 
 
 if __name__ == "__main__":

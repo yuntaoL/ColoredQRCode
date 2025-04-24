@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 import pytest
+import numpy as np
 from coloredqrcode import generate_qr_code, decode_qr_code, QRCodeDataTooLongError
 
 
@@ -60,6 +61,21 @@ class TestColoredQRCode(unittest.TestCase):
         assert generate_qr_code("a" * 2953) is not None  # Should use L
         with pytest.raises(QRCodeDataTooLongError):
             generate_qr_code("a" * 2954)
+
+    def test_decode_qr_code_from_image_object(self):
+        """Test decoding from a PIL.Image.Image object, not just file path."""
+        message = "Hello, QR! (image object)"
+        img = generate_qr_code(message)
+        decoded = decode_qr_code(img)
+        self.assertEqual(decoded, message)
+
+    def test_decode_qr_code_from_numpy_array(self):
+        """Test decoding from a numpy array input."""
+        message = "Hello, QR! (numpy array)"
+        img = generate_qr_code(message)
+        arr = np.array(img)
+        decoded = decode_qr_code(arr)
+        self.assertEqual(decoded, message)
 
 
 if __name__ == "__main__":

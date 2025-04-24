@@ -2,6 +2,7 @@ import os
 import unittest
 import shutil
 from PIL import Image
+import numpy as np
 from coloredqrcode import generate_colored_qr_code_im, decode_colored_qr_code_im, QRCodeDataTooLongError
 
 class TestGenerateColoredQRCodeIM(unittest.TestCase):
@@ -72,6 +73,21 @@ class TestGenerateColoredQRCodeIM(unittest.TestCase):
             decoded = decode_colored_qr_code_im(jpeg_path)
             self.assertEqual(decoded, data, f"Failed at JPEG quality {quality}")
         # Removed multiple re-encoding test for color IM
+
+    def test_decode_colored_qr_code_im_from_image_object(self):
+        """Test decoding IM QR from a PIL.Image.Image object, not just file path."""
+        data = "Test image object input for decode_colored_qr_code_im"
+        img = generate_colored_qr_code_im(data)
+        decoded = decode_colored_qr_code_im(img)
+        self.assertEqual(decoded, data)
+
+    def test_decode_colored_qr_code_im_from_numpy_array(self):
+        """Test decoding IM QR from a numpy array input."""
+        data = "Test numpy array input for decode_colored_qr_code_im"
+        img = generate_colored_qr_code_im(data)
+        arr = np.array(img)
+        decoded = decode_colored_qr_code_im(arr)
+        self.assertEqual(decoded, data)
 
 if __name__ == "__main__":
     unittest.main()

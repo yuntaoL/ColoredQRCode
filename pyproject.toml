@@ -21,3 +21,4 @@ exclude = '''
     tests/qr_outputs/
 )
 '''
+license = "MIT"

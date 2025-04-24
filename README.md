@@ -34,8 +34,16 @@ img.show()  # Display the QR code
 ```python
 from coloredqrcode import decode_qr_code
 
+# Accepts file path, PIL.Image.Image, or numpy.ndarray as input
+# Example with file path:
 data = decode_qr_code("qrcode.png")
 print(data)  # Output: Hello, QR!
+
+# Example with PIL Image:
+from PIL import Image
+img = Image.open("qrcode.png")
+data = decode_qr_code(img)
+print(data)
 ```
 
 ### Generate a Colored QR Code (RGB)
@@ -53,7 +61,15 @@ img.show()
 ```python
 from coloredqrcode import decode_colored_qr_code
 
+# Accepts file path, PIL.Image.Image, or numpy.ndarray as input
+# Example with file path:
 decoded = decode_colored_qr_code("colored_qr.png")
+print(decoded)
+
+# Example with PIL Image:
+from PIL import Image
+img = Image.open("colored_qr.png")
+decoded = decode_colored_qr_code(img)
 print(decoded)
 ```
 
@@ -72,7 +88,15 @@ img.show()
 ```python
 from coloredqrcode import decode_colored_qr_code_im
 
+# Accepts file path, PIL.Image.Image, or numpy.ndarray as input
+# Example with file path:
 decoded = decode_colored_qr_code_im("colored_qr_im.png")
+print(decoded)
+
+# Example with PIL Image:
+from PIL import Image
+img = Image.open("colored_qr_im.png")
+decoded = decode_colored_qr_code_im(img)
 print(decoded)
 ```
 
@@ -95,4 +119,4 @@ Run all tests with:
 
 ## License
 
-MIT License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
