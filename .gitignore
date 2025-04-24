@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 .venv
+
+tests/qr_outputs/
