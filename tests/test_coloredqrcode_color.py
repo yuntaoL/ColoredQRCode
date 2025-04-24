@@ -2,8 +2,13 @@ import os
 import tempfile
 import unittest
 from PIL import Image
-from coloredqrcode import generate_colored_qr_code, QRCodeDataTooLongError, decode_colored_qr_code
+from coloredqrcode import (
+    generate_colored_qr_code,
+    QRCodeDataTooLongError,
+    decode_colored_qr_code,
+)
 import shutil
+
 
 class TestGenerateColoredQRCode(unittest.TestCase):
     @classmethod
@@ -29,7 +34,7 @@ class TestGenerateColoredQRCode(unittest.TestCase):
         img = generate_colored_qr_code(data, output_path=img_path)
         self.assertTrue(os.path.exists(img_path))
         self.assertIsInstance(img, Image.Image)
-        self.assertEqual(img.mode, 'RGB')
+        self.assertEqual(img.mode, "RGB")
         self.assertGreater(img.size[0], 0)
         self.assertGreater(img.size[1], 0)
 
@@ -65,7 +70,7 @@ class TestGenerateColoredQRCode(unittest.TestCase):
         # The max length for a normal QR code (L, version 40, byte mode) is 2953 bytes
         max_normal = 2953
         max_colored = max_normal * 3
-        data = 'a' * max_colored
+        data = "a" * max_colored
         img_path = os.path.join(self.output_dir, "colored_qr_max.png")
         img = generate_colored_qr_code(data, output_path=img_path)
         self.assertTrue(os.path.exists(img_path))
@@ -74,7 +79,8 @@ class TestGenerateColoredQRCode(unittest.TestCase):
         self.assertEqual(decoded, data)
         # Exceeding max should raise
         with self.assertRaises(QRCodeDataTooLongError):
-            generate_colored_qr_code('a' * (max_colored + 1))
+            generate_colored_qr_code("a" * (max_colored + 1))
+
 
 if __name__ == "__main__":
     unittest.main()

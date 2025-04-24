@@ -1,15 +1,23 @@
-[tool.poetry]
-name = "coloredqrcode"
-version = "0.1.0"
-description = "A Python project for generating colored QR codes."
-authors = ["Your Name <you@example.com>"]
+# This file configures Black, the Python code formatter.
+# See: https://black.readthedocs.io/en/stable/usage_and_configuration/index.html
 
-[tool.poetry.dependencies]
-python = ">=3.8,<4.0"
-
-[tool.poetry.dev-dependencies]
-pytest = "*"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.black]
+line-length = 88
+target-version = ['py39']
+skip-string-normalization = false
+include = '\.pyi?$'
+exclude = '''
+/(
+    \._| # hidden files and directories
+    build/
+    dist/
+    .eggs/
+    .git/
+    .hg/
+    .mypy_cache/
+    .tox/
+    .venv/
+    __pycache__/
+    tests/qr_outputs/
+)
+'''
