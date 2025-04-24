@@ -1,0 +1,14 @@
+test_decode_invalid_image (test_coloredqrcode.TestColoredQRCode) ... ok
+test_generate_and_decode_qr_code (test_coloredqrcode.TestColoredQRCode) ... ok
+test_generate_qr_code_auto_error_correction (test_coloredqrcode.TestColoredQRCode) ... ok
+test_generate_qr_code_error_correction_levels (test_coloredqrcode.TestColoredQRCode) ... ok
+test_generate_qr_code_too_long (test_coloredqrcode.TestColoredQRCode) ... ok
+test_colored_qr_code_max_length (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_decode_colored_qr_code_basic (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_decode_colored_qr_code_jpeg_compression (test_coloredqrcode_color.TestGenerateColoredQRCode)
+Test decoding colored QR code after saving as JPEG with various compression levels and after multiple re-encodings. ... ok
+test_decode_colored_qr_code_visual (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_generate_colored_qr_code_basic (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_generate_colored_qr_code_short_data (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_generate_colored_qr_code_visual (test_coloredqrcode_color.TestGenerateColoredQRCode) ... ok
+test_colored_qr_code_im_max_length (test_coloredqrcode_im.TestGenerateColoredQRCodeIM) ... 

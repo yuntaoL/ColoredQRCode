@@ -1,19 +1,17 @@
 import os
 import unittest
+import shutil
 from PIL import Image
 from coloredqrcode import generate_colored_qr_code_im, decode_colored_qr_code_im, QRCodeDataTooLongError
 
 class TestGenerateColoredQRCodeIM(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs")
+        cls.output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs", "color_im")
+        # Clean the output subdirectory before all tests
         if os.path.exists(cls.output_dir):
-            for f in os.listdir(cls.output_dir):
-                fp = os.path.join(cls.output_dir, f)
-                if os.path.isfile(fp):
-                    os.remove(fp)
-        else:
-            os.makedirs(cls.output_dir, exist_ok=True)
+            shutil.rmtree(cls.output_dir)
+        os.makedirs(cls.output_dir, exist_ok=True)
 
     def test_generate_colored_qr_code_im_basic(self):
         data = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -58,6 +56,22 @@ class TestGenerateColoredQRCodeIM(unittest.TestCase):
                 for _ in range(6)
             ]) + 'x'
             generate_colored_qr_code_im(too_long_data)
+
+    def test_decode_colored_qr_code_im_jpeg_compression(self):
+        """
+        Test decoding colored QR code (IM) after saving as JPEG with various compression levels.
+        Save all JPEGs with quality in filename for visual inspection. Use a subfolder for color IM QR code tests.
+        """
+        data = "JPEG compression test: The quick brown fox jumps over the lazy dog 1234567890!@#"
+        img_path = os.path.join(self.output_dir, "colored_qr_im_jpeg_original.png")
+        img = generate_colored_qr_code_im(data, output_path=img_path)
+        # Test different JPEG quality levels
+        for quality in [95, 75, 50]:
+            jpeg_path = os.path.join(self.output_dir, f"colored_qr_im_jpeg_q{quality}.jpg")
+            img.save(jpeg_path, format="JPEG", quality=quality)
+            decoded = decode_colored_qr_code_im(jpeg_path)
+            self.assertEqual(decoded, data, f"Failed at JPEG quality {quality}")
+        # Removed multiple re-encoding test for color IM
 
 if __name__ == "__main__":
     unittest.main()

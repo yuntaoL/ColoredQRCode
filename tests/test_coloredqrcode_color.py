@@ -13,15 +13,12 @@ import shutil
 class TestGenerateColoredQRCode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs")
-        # Clean the output directory before all tests
+        parent_dir = os.path.join(os.path.dirname(__file__), "qr_outputs")
+        cls.output_dir = os.path.join(parent_dir, "color")
+        # Only remove the 'color' subdirectory, not the whole qr_outputs tree
         if os.path.exists(cls.output_dir):
-            for f in os.listdir(cls.output_dir):
-                fp = os.path.join(cls.output_dir, f)
-                if os.path.isfile(fp):
-                    os.remove(fp)
-        else:
-            os.makedirs(cls.output_dir, exist_ok=True)
+            shutil.rmtree(cls.output_dir)
+        os.makedirs(cls.output_dir, exist_ok=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -92,6 +89,31 @@ class TestGenerateColoredQRCode(unittest.TestCase):
                 for _ in range(3)
             ]) + 'x'
             generate_colored_qr_code(too_long_data)
+
+    def test_decode_colored_qr_code_jpeg_compression(self):
+        """
+        Test decoding colored QR code after saving as JPEG with various compression levels and after multiple re-encodings.
+        Save all JPEGs with quality in filename for visual inspection. Use a subfolder for color QR code tests.
+        """
+        data = "JPEG compression test: The quick brown fox jumps over the lazy dog 1234567890!@#"
+        img_path = os.path.join(self.output_dir, "colored_qr_jpeg_original.png")
+        img = generate_colored_qr_code(data, output_path=img_path)
+        # Test different JPEG quality levels
+        for quality in [95, 75, 50]:
+            jpeg_path = os.path.join(self.output_dir, f"colored_qr_jpeg_q{quality}.jpg")
+            img.save(jpeg_path, format="JPEG", quality=quality)
+            decoded = decode_colored_qr_code(jpeg_path)
+            self.assertEqual(decoded, data, f"Failed at JPEG quality {quality}")
+        # Test multiple JPEG re-encodings (5 times) for each quality
+        for quality in [95, 75, 50]:
+            jpeg_path = os.path.join(self.output_dir, f"colored_qr_jpeg_q{quality}_5x.jpg")
+            img_temp = img.copy()
+            img_temp.save(jpeg_path, format="JPEG", quality=quality)
+            for i in range(5):
+                img_temp = Image.open(jpeg_path)
+                img_temp.save(jpeg_path, format="JPEG", quality=quality)
+            decoded = decode_colored_qr_code(jpeg_path)
+            self.assertEqual(decoded, data, f"Failed after 5x JPEG re-encodings at quality {quality}")
 
 
 if __name__ == "__main__":
