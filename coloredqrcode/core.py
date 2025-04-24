@@ -11,6 +11,26 @@ from qrcode.constants import (
     ERROR_CORRECT_H,
 )
 
+EC_MAP_INV = {
+    ERROR_CORRECT_L: "L",
+    ERROR_CORRECT_M: "M",
+    ERROR_CORRECT_Q: "Q",
+    ERROR_CORRECT_H: "H",
+}
+
+IM_INTENSITY_MAP = {
+    (0, 0): 10,
+    (0, 1): 55,
+    (1, 0): 137,
+    (1, 1): 255,
+}
+IM_INTENSITY_THRESHOLDS = [32, 96, 196]  # Between 10, 55, 137, 255
+IM_INTENSITY_REVERSE_MAP = {
+    10: (0, 0),
+    55: (0, 1),
+    137: (1, 0),
+    255: (1, 1),
+}
 
 class QRCodeDataTooLongError(ValueError):
     """Exception raised when the input data exceeds the maximum supported QR code length."""
@@ -40,17 +60,32 @@ def _get_max_bytes(error_correction: int) -> int:
         raise ValueError("Invalid error correction level.")
 
 
-def _auto_select_error_correction(data: str) -> int:
+def _auto_select_error_correction(data: str) -> str:
     """
     Selects the highest error correction level that can fit the data.
+    Returns the error correction letter ('L', 'M', 'Q', 'H').
     """
     length = len(data.encode("utf-8"))
-    for level in [ERROR_CORRECT_H, ERROR_CORRECT_Q, ERROR_CORRECT_M, ERROR_CORRECT_L]:
+    for level, letter in zip(
+        [ERROR_CORRECT_H, ERROR_CORRECT_Q, ERROR_CORRECT_M, ERROR_CORRECT_L],
+        ["H", "Q", "M", "L"]
+    ):
         if length <= _get_max_bytes(level):
-            return level
+            return letter
     raise QRCodeDataTooLongError(
         f"Input data is too long for a QR code (max {_get_max_bytes(ERROR_CORRECT_L)} bytes in Byte mode, got {length} bytes)."
     )
+
+
+def _split_and_pad_data(data: str, n_parts: int, pad_char: str) -> List[str]:
+    """
+    Split data into n_parts, padding each part to the same length with pad_char.
+    """
+    n = len(data)
+    k, m = divmod(n, n_parts)
+    parts = [data[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n_parts)]
+    maxlen = max(len(p) for p in parts)
+    return [p.ljust(maxlen, pad_char) for p in parts]
 
 
 def generate_qr_code(
@@ -78,7 +113,7 @@ def generate_qr_code(
     if error_correction:
         ec_level = ec_map[error_correction]
     else:
-        ec_level = _auto_select_error_correction(data)
+        ec_level = ec_map[_auto_select_error_correction(data)]
     max_bytes = _get_max_bytes(ec_level)
     if len(data.encode("utf-8")) > max_bytes:
         raise QRCodeDataTooLongError(
@@ -123,23 +158,8 @@ def generate_colored_qr_code(
     """
     if len(data) == 0:
         raise QRCodeDataTooLongError("Input data must have at least 1 character to generate a colored QR code.")
-    def split_and_pad_data(data: str, pad_char: str) -> List[str]:
-        n = len(data)
-        k, m = divmod(n, 3)
-        parts = [data[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(3)]
-        maxlen = max(len(p) for p in parts)
-        return [p.ljust(maxlen, pad_char) for p in parts]
-
-    data_pieces = split_and_pad_data(data, pad_char)
-    # All parts have the same length after padding
-    ec_level = _auto_select_error_correction(data_pieces[0])
-    ec_map_inv = {
-        ERROR_CORRECT_L: "L",
-        ERROR_CORRECT_M: "M",
-        ERROR_CORRECT_Q: "Q",
-        ERROR_CORRECT_H: "H",
-    }
-    ec_letter = ec_map_inv[ec_level]
+    data_pieces = _split_and_pad_data(data, 3, pad_char)
+    ec_letter = _auto_select_error_correction(data_pieces[0])
     qr_imgs = [generate_qr_code(piece, box_size=box_size, border=border, error_correction=ec_letter) for piece in data_pieces]  # type: ignore[arg-type]
     size = qr_imgs[0].size
     qr_imgs = [img.resize(size, resample=Image.Resampling.NEAREST) for img in qr_imgs]
@@ -194,4 +214,90 @@ def decode_colored_qr_code(image_path: str, pad_char: str = "\0") -> str:
         part = decoded_objs[0].data.decode("utf-8")
         part = part.rstrip(pad_char)
         decoded_pieces.append(part)
+    return "".join(decoded_pieces)
+
+
+def generate_colored_qr_code_im(
+    data: str,
+    output_path: Optional[str] = None,
+    box_size: int = 10,
+    border: int = 4,
+    pad_char: str = "\0",
+) -> Image.Image:
+    """
+    Generates a colored QR code with Intensity Modulation (IM) to double data density per RGB channel.
+    Splits data into 6 parts (2 per channel), encodes each as a QR code, and merges them using four intensity levels per color (10, 55, 137, 255).
+    Optionally saves the result to output_path.
+    Returns a PIL Image object.
+    """
+    if len(data) == 0:
+        raise QRCodeDataTooLongError("Input data must have at least 1 character to generate a colored QR code.")
+    data_pieces = _split_and_pad_data(data, 6, pad_char)
+    ec_letter = _auto_select_error_correction(data_pieces[0])
+    qr_imgs = [generate_qr_code(piece, box_size=box_size, border=border, error_correction=ec_letter) for piece in data_pieces]  # type: ignore[arg-type]
+    size = qr_imgs[0].size
+    qr_imgs = [img.resize(size, resample=Image.Resampling.NEAREST) for img in qr_imgs]
+    result_arr = np.zeros((size[1], size[0], 3), dtype=np.uint8)
+    for i, color in enumerate([(0,), (1,), (2,)]):  # R, G, B
+        img_dim = qr_imgs[2 * i].convert("L")
+        img_bright = qr_imgs[2 * i + 1].convert("L")
+        arr_dim = np.array(img_dim)
+        arr_bright = np.array(img_bright)
+        channel = np.zeros_like(arr_dim, dtype=np.uint8)
+        for y in range(arr_dim.shape[0]):
+            for x in range(arr_dim.shape[1]):
+                bit_dim = int(arr_dim[y, x] < 128)      # black module = 1
+                bit_bright = int(arr_bright[y, x] < 128)
+                val = IM_INTENSITY_MAP[(bit_dim, bit_bright)]
+                channel[y, x] = val
+        result_arr[..., color[0]] = channel
+    result_img = Image.fromarray(result_arr, "RGB")
+    if output_path:
+        result_img.save(output_path)
+    return result_img
+
+
+def decode_colored_qr_code_im(image_path: str, pad_char: str = "\0") -> str:
+    """
+    Decodes a colored QR code generated by generate_colored_qr_code_im.
+    For each channel, uses IM_INTENSITY_REVERSE_MAP to extract two QR codes, decodes all 6, and concatenates the result.
+    Args:
+        image_path: Path to the colored QR code image.
+        pad_char: The character used for padding during encoding.
+    Returns:
+        The combined decoded string from all six QR codes.
+    Raises:
+        ValueError: If any of the QR codes cannot be decoded.
+    """
+    img = Image.open(image_path).convert("RGB")
+    channels = img.split()  # R, G, B
+    decoded_pieces = []
+    for idx, channel in enumerate(channels):
+        arr = np.array(channel)
+        # Reconstruct the two QR code images for this channel
+        qr_dim = np.full(arr.shape, 255, dtype=np.uint8)  # start as white
+        qr_bright = np.full(arr.shape, 255, dtype=np.uint8)
+        for y in range(arr.shape[0]):
+            for x in range(arr.shape[1]):
+                val = int(arr[y, x])
+                bits = IM_INTENSITY_REVERSE_MAP.get(val, (0, 0))
+                # If bit is 1, set black (0), else white (255)
+                qr_dim[y, x] = 0 if bits[0] else 255
+                qr_bright[y, x] = 0 if bits[1] else 255
+        # Decode dim QR
+        qr_img_dim = Image.fromarray(qr_dim, "L").convert("RGB")
+        qr_arr_dim = np.array(qr_img_dim)
+        decoded_objs_dim = pyzbar_decode(qr_arr_dim)
+        if not decoded_objs_dim:
+            raise ValueError(f"Failed to decode dim QR code in channel {idx}.")
+        part_dim = decoded_objs_dim[0].data.decode("utf-8").rstrip(pad_char)
+        decoded_pieces.append(part_dim)
+        # Decode bright QR
+        qr_img_bright = Image.fromarray(qr_bright, "L").convert("RGB")
+        qr_arr_bright = np.array(qr_img_bright)
+        decoded_objs_bright = pyzbar_decode(qr_arr_bright)
+        if not decoded_objs_bright:
+            raise ValueError(f"Failed to decode bright QR code in channel {idx}.")
+        part_bright = decoded_objs_bright[0].data.decode("utf-8").rstrip(pad_char)
+        decoded_pieces.append(part_bright)
     return "".join(decoded_pieces)
