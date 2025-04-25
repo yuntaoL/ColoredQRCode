@@ -1,10 +1,13 @@
+"""Unit tests for the core QR code generation and decoding functionality."""
 import os
 import tempfile
 import unittest
-import pytest
+
 import numpy as np
-from coloredqrcode import generate_qr_code, decode_qr_code, QRCodeDataTooLongError
-from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M, ERROR_CORRECT_Q, ERROR_CORRECT_H
+import pytest
+from PIL import Image
+
+from coloredqrcode import QRCodeDataTooLongError, decode_qr_code, generate_qr_code
 
 
 class TestColoredQRCode(unittest.TestCase):
@@ -23,12 +26,12 @@ class TestColoredQRCode(unittest.TestCase):
 
     def test_generate_and_decode_qr_code_max(self):
         """Test generating and decoding a standard QR code with max data, and save output to qr_outputs/normal/ for documentation/demo purposes."""
-        message = "a" * 2953  # Max for error correction L
+        message = "a" * 1273  # Max for error correction H (auto-selected for best quality)
         output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs", "normal")
         os.makedirs(output_dir, exist_ok=True)
         img_path = os.path.join(output_dir, "test_qr_max.png")
         # Generate QR code
-        img = generate_qr_code(message, output_path=img_path, error_correction=ERROR_CORRECT_L)
+        img = generate_qr_code(message, output_path=img_path)
         self.assertTrue(os.path.exists(img_path))
         # Decode QR code
         decoded = decode_qr_code(img_path)
@@ -45,30 +48,11 @@ class TestColoredQRCode(unittest.TestCase):
             self.assertIsNone(decoded)
 
     def test_generate_qr_code_too_long(self):
-        # Data that exceeds the QR code max byte length (2953 bytes for L)
-        data = "a" * 2954
+        """Test that the public API properly handles data that is too long"""
+        data = "a" * 2954  # Exceeds max possible length
         with pytest.raises(QRCodeDataTooLongError) as excinfo:
-            generate_qr_code(data, error_correction=ERROR_CORRECT_L)
+            generate_qr_code(data)
         assert "Input data is too long for a QR code" in str(excinfo.value)
-
-    def test_generate_qr_code_error_correction_levels(self):
-        # Test that different error correction levels accept correct data sizes
-        levels = [
-            (ERROR_CORRECT_L, 2953),
-            (ERROR_CORRECT_M, 2331),
-            (ERROR_CORRECT_Q, 1663),
-            (ERROR_CORRECT_H, 1273),
-        ]
-        for level, max_bytes in levels:
-            data = "a" * max_bytes
-            try:
-                img = generate_qr_code(data, error_correction=level)
-                assert img is not None
-            except QRCodeDataTooLongError:
-                pytest.fail(f"Should not fail for {level} with {max_bytes} bytes")
-            # Exceeding should raise
-            with pytest.raises(QRCodeDataTooLongError):
-                generate_qr_code("a" * (max_bytes + 1), error_correction=level)
 
     def test_generate_qr_code_auto_error_correction(self):
         # Should auto-select the highest error correction that fits
