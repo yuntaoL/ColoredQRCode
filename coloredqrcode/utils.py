@@ -17,28 +17,44 @@ IM_INTENSITY_MAP: Dict[Tuple[int, int], int] = {
 # Auto-generate the reverse map to ensure consistency
 IM_INTENSITY_REVERSE_MAP = {v: k for k, v in IM_INTENSITY_MAP.items()}
 
-def load_image_for_decode(image: Union[str, Image.Image, np.ndarray]) -> np.ndarray:
+
+def load_image_for_decode(image: Union[str, Image.Image, np.ndarray]) -> Image.Image:
     """
     Helper to load an image for decoding. Accepts file path, PIL Image, or numpy array.
-    Returns a numpy array (BGR for OpenCV/pyzbar).
+    Returns a PIL Image in RGB mode, ready for QR code decoding.
+
+    Args:
+        image: File path, PIL Image object, or numpy array.
+            For numpy arrays:
+            - If from cv2.imread(): BGR format (need conversion)
+            - If from PIL.Image.array(): RGB format (no conversion needed)
+    Returns:
+        PIL Image in RGB mode.
+    Raises:
+        FileNotFoundError: If the image file cannot be found.
+        TypeError: If the input type is not supported.
     """
     if isinstance(image, str):
-        img = cv2.imread(image)
-        if img is None:
-            raise FileNotFoundError(f"Image file not found: {image}")
-        return img
+        # Use PIL to load image directly in RGB mode
+        img = Image.open(image).convert("RGB")
     elif isinstance(image, Image.Image):
-        return cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2BGR)
+        img = image.convert("RGB")
     elif isinstance(image, np.ndarray):
-        return image
+        # Convert numpy array to PIL Image in RGB mode
+        img = Image.fromarray(image).convert("RGB")
     else:
         raise TypeError("Input must be a file path, PIL.Image.Image, or numpy.ndarray.")
+
+    return img
+
 
 def nearest_intensity(val: int) -> int:
     """
     Find the nearest valid intensity value for IM decoding.
     """
-    return min(IM_INTENSITY_REVERSE_MAP.keys(), key=lambda k: abs(k - val))
+    # Find the intensity key with the smallest absolute difference from val
+    return min(IM_INTENSITY_REVERSE_MAP.keys(), key=lambda k: abs(int(k) - int(val)))
+
 
 def split_and_pad_data(data: str, n_parts: int, pad_char: str) -> List[str]:
     """
@@ -46,6 +62,8 @@ def split_and_pad_data(data: str, n_parts: int, pad_char: str) -> List[str]:
     """
     n = len(data)
     k, m = divmod(n, n_parts)
-    parts = [data[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n_parts)]
+    parts = [
+        data[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n_parts)
+    ]
     maxlen = max(len(p) for p in parts)
     return [p.ljust(maxlen, pad_char) for p in parts]

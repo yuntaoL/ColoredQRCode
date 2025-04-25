@@ -9,13 +9,6 @@ from PIL import Image, ImageFilter
 from .utils import nearest_intensity
 from .utils import IM_INTENSITY_MAP, IM_INTENSITY_REVERSE_MAP, nearest_intensity
 
-def preprocess_simple_qr(img: Image.Image) -> List[Image.Image]:
-    """
-    Simple preprocessing for standard QR code decoding.
-    Returns the input image in a list.
-    """
-    return [img]
-
 def preprocess_colored_qr(img: Image.Image) -> List[Image.Image]:
     """
     Preprocess colored QR code image for decoding.
