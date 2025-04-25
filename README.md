@@ -24,9 +24,18 @@ pip install -r requirements.txt
 
 ```python
 from coloredqrcode import generate_qr_code
+from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M, ERROR_CORRECT_Q, ERROR_CORRECT_H
 
 img = generate_qr_code("Hello, QR!", output_path="qrcode.png")
 img.show()  # Display the QR code
+
+# Advanced: Specify error correction level directly using qrcode constants
+img = generate_qr_code(
+    "Hello, QR! (M level)",
+    output_path="qrcode_m.png",
+    error_correction=ERROR_CORRECT_M
+)
+img.show()
 ```
 
 ### Decode a Standard QR Code
@@ -102,7 +111,7 @@ print(decoded)
 
 ## Error Handling
 
-If the input data is too long for the selected QR code type, a `QRCodeDataTooLongError` is raised.
+If the input data is too long for the selected QR code type or error correction level, a `QRCodeDataTooLongError` is raised.
 
 ## Requirements
 
