@@ -19,8 +19,7 @@ def preprocess_colored_qr(img: Image.Image) -> List[Image.Image]:
     for channel in channels:
         arr = np.array(channel)
         binary = (arr > 128).astype(np.uint8) * 255
-        inverted = 255 - binary
-        qr_img = Image.fromarray(inverted, "L").convert("RGB")
+        qr_img = Image.fromarray(binary, "L").convert("RGB")
         qr_imgs.append(qr_img)
     return qr_imgs
 
@@ -41,8 +40,8 @@ def preprocess_colored_qr_im(img: Image.Image) -> List[Image.Image]:
                 val = arr[y, x]
                 nearest = nearest_intensity(val)
                 bits = IM_INTENSITY_REVERSE_MAP[nearest]
-                qr_dim[y, x] = 0 if bits[0] else 255
-                qr_bright[y, x] = 0 if bits[1] else 255
+                qr_dim[y, x] = 255 if bits[0] else 0
+                qr_bright[y, x] = 255 if bits[1] else 0
         qr_img_dim = Image.fromarray(qr_dim, "L").filter(ImageFilter.MedianFilter(size=3)).convert("RGB")
         qr_img_bright = Image.fromarray(qr_bright, "L").filter(ImageFilter.MedianFilter(size=3)).convert("RGB")
         qr_imgs.extend([qr_img_dim, qr_img_bright])
@@ -57,8 +56,7 @@ def postprocess_colored_qr(qr_imgs: Sequence[Image.Image]) -> Image.Image:
     color_layers = []
     for img, color in zip(qr_imgs, colors):
         gray = img.convert("L")
-        inv = Image.eval(gray, lambda x: 255 - x)
-        arr = np.array(inv)
+        arr = np.array(gray)
         color_img = np.zeros((*arr.shape, 3), dtype=np.uint8)
         mask = arr == 255
         for c in range(3):
@@ -82,8 +80,8 @@ def postprocess_colored_qr_im(qr_imgs: Sequence[Image.Image]) -> Image.Image:
         channel = np.zeros_like(arr_dim, dtype=np.uint8)
         for y in range(arr_dim.shape[0]):
             for x in range(arr_dim.shape[1]):
-                bit_dim = 1 if arr_dim[y, x] < 128 else 0
-                bit_bright = 1 if arr_bright[y, x] < 128 else 0
+                bit_dim = 0 if arr_dim[y, x] < 128 else 1
+                bit_bright = 0 if arr_bright[y, x] < 128 else 1
                 val = IM_INTENSITY_MAP[(bit_dim, bit_bright)]
                 channel[y, x] = val
         result_arr[..., color[0]] = channel
