@@ -9,15 +9,30 @@ from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M, ERROR_CORRECT_Q, 
 
 class TestColoredQRCode(unittest.TestCase):
     def test_generate_and_decode_qr_code(self):
+        """Test generating and decoding a standard QR code, and save output to qr_outputs/normal/ for documentation/demo purposes."""
         message = "Hello, QR!"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            img_path = os.path.join(tmpdir, "test_qr.png")
-            # Generate QR code
-            img = generate_qr_code(message, output_path=img_path)
-            self.assertTrue(os.path.exists(img_path))
-            # Decode QR code
-            decoded = decode_qr_code(img_path)
-            self.assertEqual(decoded, message)
+        output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs", "normal")
+        os.makedirs(output_dir, exist_ok=True)
+        img_path = os.path.join(output_dir, "test_qr_basic.png")
+        # Generate QR code
+        img = generate_qr_code(message, output_path=img_path)
+        self.assertTrue(os.path.exists(img_path))
+        # Decode QR code
+        decoded = decode_qr_code(img_path)
+        self.assertEqual(decoded, message)
+
+    def test_generate_and_decode_qr_code_max(self):
+        """Test generating and decoding a standard QR code with max data, and save output to qr_outputs/normal/ for documentation/demo purposes."""
+        message = "a" * 2953  # Max for error correction L
+        output_dir = os.path.join(os.path.dirname(__file__), "qr_outputs", "normal")
+        os.makedirs(output_dir, exist_ok=True)
+        img_path = os.path.join(output_dir, "test_qr_max.png")
+        # Generate QR code
+        img = generate_qr_code(message, output_path=img_path, error_correction=ERROR_CORRECT_L)
+        self.assertTrue(os.path.exists(img_path))
+        # Decode QR code
+        decoded = decode_qr_code(img_path)
+        self.assertEqual(decoded, message)
 
     def test_decode_invalid_image(self):
         # Try to decode a non-QR image
