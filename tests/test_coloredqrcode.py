@@ -4,6 +4,7 @@ import unittest
 import pytest
 import numpy as np
 from coloredqrcode import generate_qr_code, decode_qr_code, QRCodeDataTooLongError
+from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M, ERROR_CORRECT_Q, ERROR_CORRECT_H
 
 
 class TestColoredQRCode(unittest.TestCase):
@@ -29,19 +30,20 @@ class TestColoredQRCode(unittest.TestCase):
             self.assertIsNone(decoded)
 
     def test_generate_qr_code_too_long(self):
-        # Data that exceeds the QR code max byte length (2953 bytes)
+        # Data that exceeds the QR code max byte length (2953 bytes for L)
         data = "a" * 2954
         with pytest.raises(QRCodeDataTooLongError) as excinfo:
-            generate_qr_code(data)
+            generate_qr_code(data, error_correction=ERROR_CORRECT_L)
         assert "Input data is too long for a QR code" in str(excinfo.value)
 
     def test_generate_qr_code_error_correction_levels(self):
         # Test that different error correction levels accept correct data sizes
-        from typing import Literal, Union
-
-        levels: list[
-            tuple[Union[Literal["L"], Literal["M"], Literal["Q"], Literal["H"]], int]
-        ] = [("L", 2953), ("M", 2331), ("Q", 1663), ("H", 1273)]
+        levels = [
+            (ERROR_CORRECT_L, 2953),
+            (ERROR_CORRECT_M, 2331),
+            (ERROR_CORRECT_Q, 1663),
+            (ERROR_CORRECT_H, 1273),
+        ]
         for level, max_bytes in levels:
             data = "a" * max_bytes
             try:
@@ -55,6 +57,7 @@ class TestColoredQRCode(unittest.TestCase):
 
     def test_generate_qr_code_auto_error_correction(self):
         # Should auto-select the highest error correction that fits
+        # These assertions check that the function does not raise and returns an image
         assert generate_qr_code("a" * 1000) is not None  # Should use H
         assert generate_qr_code("a" * 1500) is not None  # Should use Q
         assert generate_qr_code("a" * 2400) is not None  # Should use M
